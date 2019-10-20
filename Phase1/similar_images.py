@@ -85,7 +85,8 @@ class Similarity:
 
                 return test_image_features, dataset_image_features
 
-            if not(os.path.exists(os.path.join(reduced_dimension_pickle_path, feature+decomposition.decomposition_name+'.pkl'))):
+            if not(os.path.exists(os.path.join(reduced_dimension_pickle_path,
+                                               feature+'_'+decomposition.decomposition_name+'.pkl'))):
                 print('Pickle file not found for the Particular (model,Reduction)')
                 print('Runnning Task1 for the Particular (model,Reduction) to get the pickle file')
                 decomposition.dimensionality_reduction()

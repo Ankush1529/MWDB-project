@@ -7,7 +7,8 @@ import HOG
 import ColorMoments
 import SIFT
 import sys
-
+from sklearn.cluster import MiniBatchKMeans
+import numpy as np
 
 '''
 Class for handling all the feature vector generation for both single and multiple images
@@ -61,7 +62,17 @@ class FeaturesImages:
             for i in range(len(images)):
                 folder_images_features_dict[images[i]] = features_image_folder[i]
 
-            misc.save2pickle(folder_images_features_dict, os.path.dirname(__file__), feature=self.model_name)
+            # print(folder_images_features_dict)
+
+            if self.model_name == 'SIFT':
+                misc.save2pickle(folder_images_features_dict, os.path.dirname(__file__),
+                                 feature=self.model_name + "_OLD")
+                folder_images_features_dict_sift_new = self.compute_sift_new_features(folder_images_features_dict)
+                misc.save2pickle(folder_images_features_dict_sift_new, os.path.dirname(__file__),
+                                 feature=self.model_name)
+            else:
+                misc.save2pickle(folder_images_features_dict, os.path.dirname(__file__), feature=self.model_name)
+
 
     '''
     Given an image path, based on the model requirements the features vectors are retrieved and
@@ -86,8 +97,7 @@ class FeaturesImages:
                     if len(image_feature) == 0:
                         image_feature = window_pattern
                     else:
-                        image_feature += window_pattern
-                # print(len(image_feature))
+                        image_feature = np.concatenate([image_feature, window_pattern])
             else:
                 image_feature = self.model.compute(converted_image)
         except OSError as e:
@@ -98,3 +108,48 @@ class FeaturesImages:
                 return image_feature
             else:
                 print(image_feature)
+
+    def compute_sift_new_features(self, dataset_images_features):
+        input_k_means = []
+        sum = 0
+        images_num = 0
+
+        # To store the key_point descriptors in a 2-d matrix of size (k1+k2+k3...+kn)*128
+        min_val = 50
+        for image_id, feature_vector in dataset_images_features.items():
+            for feature_descriptor in feature_vector:
+                # Note : haven't used x,y,scale,orientation
+                input_k_means.append(feature_descriptor[4:])
+            sum = sum + len(feature_vector)
+            len_featurevec = len(feature_vector)
+            if  len_featurevec!=1 and len_featurevec < min_val:
+                min_val = len(feature_vector)
+            images_num = images_num + 1
+
+        # n_clusters = int(sum / images_num)
+        n_clusters = 300
+        # int(sum / images_num) #taking so much time - better to fix some value
+        kmeans = MiniBatchKMeans(n_clusters, random_state=42)
+        kmeans.fit(input_k_means)
+
+        row_s = 0
+        row_e = 0
+        k = 0
+
+        image_features = {}
+        for image_id, feature_vector in dataset_images_features.items():
+            row_s = row_s + k
+            k = len(feature_vector)
+            row_e = row_e + k
+            closest_cluster = kmeans.predict(input_k_means[row_s:row_e])
+            reduced_feature_img = [0] * n_clusters
+
+            for cluster_num in closest_cluster:
+                reduced_feature_img[cluster_num] = reduced_feature_img[cluster_num] + 1
+            image_features[image_id] = reduced_feature_img
+
+        folder_images_features_dict = {}
+        for image_id, feature_vector in dataset_images_features.items():
+            folder_images_features_dict[image_id] = image_features[image_id]
+
+        return folder_images_features_dict

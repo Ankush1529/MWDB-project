@@ -49,22 +49,14 @@ class Decomposition:
         # this is because the database_matrix has <=20 images and the reduction models,
         # should have n_components parameters <= n,m
         # Hence, we have to take the min(min(len(self.database_matrix[0]),len(self.database_matrix)),20)
-        self.k_components = min(len(self.database_matrix[0]), len(self.database_matrix), self.k_components)
-
         if self.decomposition_name == 'PCA':
-            self.decomposition_model = PCAModel(self.database_matrix, self.k_components)
+            self.decomposition_model = PCAModel(self.database_matrix, self.k_components, self.database_image_id)
         elif self.decomposition_name == 'SVD':
-            self.decomposition_model = SVD(self.database_matrix, self.k_components)
+            self.decomposition_model = SVD(self.database_matrix, self.k_components, self.database_image_id)
         elif self.decomposition_name == 'NMF':
-            if self.feature_extraction_model_name == 'CM':
-                raise Exception('CM is not feasible for NMF Decomposition')
-            else:
-                self.decomposition_model = NMFModel(self.database_matrix, self.k_components)
+            self.decomposition_model = NMFModel(self.database_matrix, self.k_components, self.database_image_id)
         elif self.decomposition_name == 'LDA':
-            if self.feature_extraction_model_name == 'CM':
-                raise Exception('CM is not feasible for LDA Decomposition')
-            else:
-                self.decomposition_model = LDAModel(self.database_matrix, self.k_components)
+            self.decomposition_model = LDAModel(self.database_matrix, self.k_components, self.database_image_id)
 
         self.decomposition_model.decompose()
         print('Decomposition Complete')

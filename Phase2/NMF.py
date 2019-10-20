@@ -1,5 +1,5 @@
 from sklearn.decomposition import NMF
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import scale
 import numpy as np
 
 '''
@@ -8,50 +8,63 @@ Base class for NMF decomposition.
 
 
 class NMFModel:
-    def __init__(self, database_matrix, k_components):
+    def __init__(self, database_matrix, k_components, image_list):
         self.database_matrix = database_matrix
         self.k_components = k_components
-        self.nmf = NMF(n_components=self.k_components)
-        self.principal_components = None
-        self.decomposed_database_matrix = None
+        self.nmf = NMF(init='random', random_state=23)
+        self.database_image_list = image_list
+        self.w = None
+        self.h = None
+        self.reduced_database_matrix = None
 
     '''
         This is the default method which does the decomposition.
     '''
 
     def decompose(self):
-        self.principal_components = self.nmf.fit_transform(self.database_matrix)
-        # print(len(self.principal_components), len(self.principal_components[0]))
-        self.decomposed_database_matrix = self.principal_components
-        return
-        #return self.print_term_weight_pairs()
+        # scaled_feature_matrix = scale(self.database_matrix, axis=1)
+        self.w = self.nmf.fit_transform(self.database_matrix)
+        self.h = self.nmf.components_
+        self.reduced_database_matrix = self.w
+        self.get_decomposed_data_matrix()
 
-    def get_feature_weight_values(self):
-        #return self.nmf.explained_variance_
-        return
+    def get_feature_latent_semantic_term_weight_sorted(self, idx):
+        latent_semantic = self.h[idx]
+        term_weight_dict = {}
+        for index, value in enumerate(latent_semantic, 1):
+            term_weight_dict["feature"+str(index)] = value
 
-    def get_eigen_vectors(self):
-        return np.array(self.principal_components).transpose()
+        term_weight_dict_sorted = sorted(term_weight_dict.items(), key=lambda kv: kv[1], reverse=True)
+        return term_weight_dict_sorted
+
+    def get_data_latent_semantic_term_weight_sorted(self, idx):
+        latent_semantic = self.reduced_database_matrix[:, idx]
+        term_weight_dict = {}
+        for image_id, value in zip(self.database_image_list, latent_semantic):
+            term_weight_dict[image_id] = value
+
+        term_weight_dict_sorted = sorted(term_weight_dict.items(), key=lambda kv: kv[1], reverse=True)
+        return term_weight_dict_sorted
 
     def get_decomposed_data_matrix(self):
-        return self.decomposed_database_matrix
+        return self.reduced_database_matrix[:, :self.k_components]
 
-    def print_term_weight_pairs(self,k=-1):
-        eigen_values = self.get_feature_weight_values()
-        eigen_vectors = self.get_eigen_vectors()
-        count = 1
-        for eigen_value, eigen_vector in zip(eigen_values, eigen_vectors):
-            if count > k:
-                return
-            print("Latent feature", count)
-            print("Eigen Value:", eigen_value)
-            print("Eigen Vector:", eigen_vector)
-            print()
-            count += 1
+    def print_term_weight_pairs(self, k=-1):
+        for idx in range(k):
+            print("Printing data-latentsemantics term-weight pairs for Data-Latentsemantic - " + str(idx))
+            data_latentsemantics_term_weight = self.get_data_latent_semantic_term_weight_sorted(idx)
+            print(data_latentsemantics_term_weight)
+            print("---------------------------------------------------------------------------------------")
+            print("Printing feature-latentsemantics term-weight pairs for Feature-Latentsemantic - " + str(idx))
+            feature_latentsemantics_term_weight = self.get_feature_latent_semantic_term_weight_sorted(idx)
+            print(feature_latentsemantics_term_weight)
+            print("****************************************************************************************")
+
+    def get_new_image_features_in_latent_space(self, image_features):
+        latent_features = self.nmf.transform(image_features)
+        return latent_features[0][:self.k_components]
 
 
-    def get_data_latent_semantics(self):
-        return self.decomposed_database_matrix
 
 
 

@@ -4,6 +4,7 @@ import misc
 import os
 import math
 import collections
+import numpy as np
 
 
 def euclidean_distance(feature_list1, feature_list2):
@@ -33,8 +34,10 @@ class ColorMoments:
             combined_feature.append(feature[0])
             combined_feature.append(feature[1])
             combined_feature.append(feature[2])
-        return combined_feature
-
+        hist, bins = np.histogram(combined_feature, bins=3)
+        # print(hist)
+        # return combined_feature
+        return hist
 
 
 

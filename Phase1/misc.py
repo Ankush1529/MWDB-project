@@ -72,27 +72,44 @@ def load_from_pickle(path, feature=None, k=-1):
     print('loading from pickle file path', final_path)
     infile = open(final_path, 'rb')
     dataset_features = pickle.load(infile)
-    if k!=-1:
-        for image_id, feature_vector in dataset_features.items():
-            dataset_features[image_id]=feature_vector[:k]
     return dataset_features
 
 
-def plot_similar_images(plot_images_dict):
-    plots = len(list(plot_images_dict))
-    n_cols = 3
-    n_rows = int(math.ceil(plots / n_cols))
+def plot_similar_images(plot_images_dict, subject_subject_similarity=False):
 
-    gs = gridspec.GridSpec(n_rows, n_cols)
-    fig = plt.figure()
-    image_paths = list(plot_images_dict.keys())
-    image_similarities = [plot_images_dict[image] for image in image_paths]
-    for i in range(plots):
-        ax = fig.add_subplot(gs[i])
-        image = read_image(image_paths[i])
-        im = ax.imshow(image, cmap='Greys_r')
-        similarity_string = os.path.basename(image_paths[i]) + '\nSimilarity: ' + str(
-                    round(image_similarities[i], 2))
-        ax.axis('off')
-        ax.text(x=0.5, y=-0.1, s=similarity_string, verticalalignment='bottom', horizontalalignment='center')
+    if subject_subject_similarity:
+        n_rows = 3
+        temp_sub_item = plot_images_dict.items()[0]
+        n_cols = len(temp_sub_item[1]['imageList'])
+        count = 0
+        gs = gridspec.GridSpec(n_rows, n_cols)
+        fig = plt.figure()
+        for subject, info in plot_images_dict.items():
+            images_list = info['imageList']
+            similarity_string = str(info['value'])
+            for i in range(images_list):
+                ax = fig.add_subplot(gs[i])
+                image = read_image(images_list[i])
+                im = ax.imshow(image, cmap='Greys_r')
+                ax.axis('off')
+                ax.text(x=0.5, y=-0.1, s=similarity_string, verticalalignment='bottom', horizontalalignment='center')
+
+    else:
+        plots = len(list(plot_images_dict))
+        n_cols = 3
+        n_rows = int(math.ceil(plots / n_cols))
+
+        gs = gridspec.GridSpec(n_rows, n_cols)
+        fig = plt.figure()
+        image_paths = list(plot_images_dict.keys())
+        image_similarities = [plot_images_dict[image] for image in image_paths]
+        for i in range(plots):
+            ax = fig.add_subplot(gs[i])
+            image = read_image(image_paths[i])
+            im = ax.imshow(image, cmap='Greys_r')
+            similarity_string = os.path.basename(image_paths[i]) + '\nSimilarity: ' + str(
+                round(image_similarities[i], 2))
+            ax.axis('off')
+            ax.text(x=0.5, y=-0.1, s=similarity_string, verticalalignment='bottom', horizontalalignment='center')
+
     plt.show()
